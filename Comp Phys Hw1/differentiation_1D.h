@@ -14,7 +14,7 @@ Below are header files required:
 */
 
 
-//variables     ////////put in one structure?????
+//variables     ////////insert in one structure?????
 float x;                    //position x
 float h;                    //step size
 float (*func_ptr)(float x); //function pointer
@@ -22,181 +22,192 @@ float eps_tol;              //user defined tolerance for the relative error of t
 int max_loop;               //user defined maximum number for the loops to be operated
 
 int dif_method;             //choose differentiation method
-float max_loop_temp;        //template of max_loop to check if have input a positive integer
 
 
 //functions
-void forward_difference_1D(float x, float h, float (*func_ptr)(float x), float eps_tol, int max_loop)  //differentiate cos(x) using forward-difference algorithm
+/*
+Differentiate using forward-difference algorithm
+*/
+float forward_difference_1D(float x, float h, float (*func_ptr)(float x), float eps_tol, int max_loop)
 {
     char filename[64];      //filename string
     FILE *fp;               //pointer to file to store derivatives and step sizes
     int i;                  //loop number
     float temp;             //template used in decreasing the error between h and the difference between x & x+h
-    float derivative_1, derivative_2;  //derivatives of the function for h_i and h_i+1
-    float e_1, e_2;                    //absolute error of derivatives for i and i+1
-    float eps_1 = eps_tol, eps_2;      //relative error of derivatives for i and i+1
+    float derivative[max_loop];//derivatives of the function for h_i and h_i+1
+    float e[max_loop - 1];  //absolute error of derivatives for i and i+1
+    float eps[max_loop - 1]; //relative error of derivatives for i and i+1
+    int i_max = max_loop;   //maximum of loop number really calculated, initialized to be max_loop, which is the maximum case; will change if stop before reaching this value
+    int i_temp;             //epsilon index template used to find the smallest epsilon
 
-    sprintf(filename, "fwd_d_of_%s_at_%f.txt", function_1D, x);////////////////////
+    sprintf(filename, "fwd_d_of_%s_at_%f.txt", function_1D, x);///////////try input manually filename
     fp = fopen(filename, "w");
     fprintf(fp, "Derivatives of %s at %f using forward difference method\n\n", function_1D, x);
     fprintf(fp, " i  h              derivative      e               epsilon \n");
 
-    for (i = 1; i < max_loop; i++)
+    for (i = 1; i <= max_loop; i++)
     {
         temp = x + h;       //to decrease error of the difference between x & x+h
         h = temp - x;
 
         if(i == 1)
         {
-            derivative_1 = (((*func_ptr)(x + h) - (*func_ptr)(x)) / h);  //initiate the derivative for i
-            fprintf(fp, "%2d  %7.6e  %7.6e\n", i, h, derivative_1);
+            derivative[0] = (((*func_ptr)(x + h) - (*func_ptr)(x)) / h);      //differentiate using forward difference method
+            fprintf(fp, "%2d  %7.6e  %7.6e\n", i, h, derivative[0]);
         }
         else
         {
-            derivative_2 = (((*func_ptr)(x + h) - (*func_ptr)(x)) / h);  //the derivative for i+1
-
-            if(i == 2)
-            {
-                e_1 = derivative_2 - derivative_1;                       //initiate the absolute error of the derivative
-                eps_1 = e_1 / derivative_1;                              //initiate the relative error of the derivative
-                fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative_2, e_1, eps_1);  //data are written in the form: loop i, step size h, derivative, estimated absolute error e, relative error \epsilon
-            }
-            else
-            {
-                e_2 = derivative_2 - derivative_1;
-                eps_2 = e_2 / derivative_1;
-                fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative_2, e_2, eps_2);
-                e_1 = e_2;                                               //set e_i for the next i=i+1 as e_i+1 for this loop i
-                eps_1 = eps_2;                                           //set eps_i for the next i=i+1 as eps_i+1 for this loop i
-                derivative_1 = derivative_2;
-            }
+            derivative[i - 1] = (((*func_ptr)(x + h) - (*func_ptr)(x)) / h);  //differentiate using forward difference method
+            e[i - 2] = derivative[i - 1] - derivative[i - 2];                 //the absolute error of the derivative
+            eps[i - 2] = e[i - 2] / derivative[i - 2];                        //the relative error of the derivative
+            fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative[i - 1], e[i - 2], eps[i - 2]);  //data are written in the form: loop i, step size h, derivative, estimated absolute error e, relative error \epsilon
         }
-
-        //printf("%lf, %lf\n", log(fabs(eps_1)), log(fabs(eps_tol)));  //test
-        if (log(fabs(eps_1)) < log(fabs(eps_tol)))
+        ////////////add: when f(x+h) - f(x) or something reaches machine precision then break
+        //printf("%lf, %lf\n", log(fabs(eps_1)), log(fabs(eps_tol)));         //test
+        if ((log(fabs(eps[i - 2])) < log(fabs(eps_tol))) && (i != 1))         //break condition: when reaching the user defined convergence condition
+        {
+            i_max = i;
             break;
+        }
 
         h = h / 2;          //half the step size
     }
 
     fclose(fp);
+
+    i_temp = 0;
+    for (int l = 1; l <= i_max - 2; l++)                                      //find index i when relative error is the smallest
+    {
+        if (fabs(eps[i_temp]) > fabs(eps[l]))
+            i_temp = l;
+    }
+    return derivative[i_temp + 1];                                            //eps[i] is related to f_prime_i+2 i.e. derivative[i+1]
 }
 
-void central_difference_1D(float x, float h, float (*func_ptr)(float x), float eps_tol, int max_loop)  //differentiate cos(x) using forward-difference algorithm
+/*
+Differentiate using central-difference algorithm
+*/
+float central_difference_1D(float x, float h, float (*func_ptr)(float x), float eps_tol, int max_loop)
 {
     char filename[64];      //filename string
     FILE *fp;               //pointer to file to store derivatives and step sizes
     int i;                  //loop number
     float temp;             //template used in decreasing the error between h and the difference between x & x+h
-    float derivative_1, derivative_2;  //derivatives of the function for h_i and h_i+1
-    float e_1, e_2;                    //absolute error of derivatives for i and i+1
-    float eps_1 = eps_tol, eps_2;      //relative error of derivatives for i and i+1
+    float derivative[max_loop];//derivatives of the function for h_i and h_i+1
+    float e[max_loop - 1];  //absolute error of derivatives for i and i+1
+    float eps[max_loop - 1]; //relative error of derivatives for i and i+1
+    int i_max = max_loop;   //maximum of loop number really calculated, initialized to be max_loop, which is the maximum case; will change if stop before reaching this value
+    int i_temp;             //epsilon index template used to find the smallest epsilon
 
     sprintf(filename, "ctr_d_of_%s_at_%f.txt", function_1D, x);
     fp = fopen(filename, "w");
     fprintf(fp, "Derivatives of %s at %f using central difference method\n\n", function_1D, x);
     fprintf(fp, " i  h              derivative      e               epsilon \n");
 
-    for (i = 1; i < max_loop; i++)
+    for (i = 1; i <= max_loop; i++)
     {
         temp = x + h;       //to decrease error of the difference between x & x+h
         h = temp - x;
 
         if(i == 1)
         {
-            derivative_1 = (((*func_ptr)(x + h) - (*func_ptr)(x - h)) / (2 * h));  //initiate the derivative for i
-            fprintf(fp, "%2d  %7.6e  %7.6e\n", i, h, derivative_1);
+            derivative[0] = (((*func_ptr)(x + h) - (*func_ptr)(x - h)) / (2 * h));      //differentiate using central difference method
+            fprintf(fp, "%2d  %7.6e  %7.6e\n", i, h, derivative[0]);
         }
         else
         {
-            derivative_2 = (((*func_ptr)(x + h) - (*func_ptr)(x - h)) / (2 * h));  //the derivative for i+1
-
-            if(i == 2)
-            {
-                e_1 = derivative_2 - derivative_1;                                 //initiate the absolute error of the derivative
-                eps_1 = e_1 / derivative_1;                                        //initiate the relative error of the derivative
-                fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative_2, e_1, eps_1);  //data are written in the form: loop i, step size h, derivative, estimated absolute error e, relative error \epsilon
-            }
-            else
-            {
-                e_2 = derivative_2 - derivative_1;
-                eps_2 = e_2 / derivative_1;
-                fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative_2, e_2, eps_2);
-                e_1 = e_2;                                                         //set e_i for the next i=i+1 as e_i+1 for this loop i
-                eps_1 = eps_2;                                                     //set eps_i for the next i=i+1 as eps_i+1 for this loop i
-                derivative_1 = derivative_2;
-            }
+            derivative[i - 1] = (((*func_ptr)(x + h) - (*func_ptr)(x - h)) / (2 * h));  //differentiate using central difference method
+            e[i - 2] = derivative[i - 1] - derivative[i - 2];                           //the absolute error of the derivative
+            eps[i - 2] = e[i - 2] / derivative[i - 2];                                  //the relative error of the derivative
+            fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative[i - 1], e[i - 2], eps[i - 2]);  //data are written in the form: loop i, step size h, derivative, estimated absolute error e, relative error \epsilon
         }
 
-        //printf("%lf, %lf\n", log(fabs(eps_1)), log(fabs(eps_tol)));  //test
-        if (log(fabs(eps_1)) < log(fabs(eps_tol)))
+        //printf("%lf, %lf\n", log(fabs(eps_1)), log(fabs(eps_tol)));                   //test
+        if ((log(fabs(eps[i - 2])) < log(fabs(eps_tol))) && (i != 1))                   //break condition: when reaching the user defined convergence condition
+        {
+            i_max = i;
             break;
+        }
 
         h = h / 2;          //half the step size
     }
 
     fclose(fp);
+
+    i_temp = 0;
+    for (int l = 1; l <= i_max - 2; l++)                                                //find index i when relative error is the smallest
+    {
+        if (fabs(eps[i_temp]) > fabs(eps[l]))
+            i_temp = l;
+    }
+    return derivative[i_temp + 1];                                                      //eps[i] is related to f_prime_i+2 i.e. derivative[i+1]
 }
 
-void extrapolated_difference_1D(float x, float h, float (*func_ptr)(float), float eps_tol, int max_loop)  //differentiate cos(x) using forward-difference algorithm
+/*
+Differentiate using extrapolated-difference algorithm
+*/
+float extrapolated_difference_1D(float x, float h, float (*func_ptr)(float), float eps_tol, int max_loop)
 {
     char filename[64];      //filename string
     FILE *fp;               //pointer to file to store derivatives, step sizes, and estimated errors
     int i;                  //loop number
     float temp;             //template used in decreasing the error between h and the difference between x & x+h
-    float derivative_1, derivative_2;  //derivatives of the function for h_i and h_i+1
-    float e_1, e_2;                    //absolute error of derivatives for i and i+1
-    float eps_1 = eps_tol, eps_2;      //relative error of derivatives for i and i+1
+    float derivative[max_loop];//derivatives of the function for h_i and h_i+1
+    float e[max_loop - 1];  //absolute error of derivatives for i and i+1
+    float eps[max_loop - 1];//relative error of derivatives for i and i+1
+    int i_max = max_loop;   //maximum of loop number really calculated, initialized to be max_loop, which is the maximum case; will change if stop before reaching this value
+    int i_temp;             //epsilon index template used to find the smallest epsilon
 
     sprintf(filename, "etp_d_of_%s_at_%f.txt", function_1D, x);
     fp = fopen(filename, "w");
     fprintf(fp, "Derivatives of %s at %f using extrapolated difference method\n\n", function_1D, x);
     fprintf(fp, " i  h              derivative      e               epsilon \n");
 
-    for (i = 1; i < max_loop; i++)
+    for (i = 1; i <= max_loop; i++)
     {
         temp = x + h;       //to decrease error of the difference between x & x+h
         h = temp - x;
 
         if(i == 1)
         {
-            derivative_1 = (((*func_ptr)(x + 2 * h) + 8 * (*func_ptr)(x + h) - 8 * (*func_ptr)(x - h) - (*func_ptr)(x - 2 * h)) / (12 * h));  //initiate the derivative for i
-            fprintf(fp, "%2d  %7.6e  %7.6e\n", i, h, derivative_1);
+            derivative[0] = ((-(*func_ptr)(x + 2 * h) + 8 * (*func_ptr)(x + h) - 8 * (*func_ptr)(x - h) + (*func_ptr)(x - 2 * h)) / (12 * h));      //differentiate using central difference method
+            fprintf(fp, "%2d  %7.6e  %7.6e\n", i, h, derivative[0]);
         }
         else
         {
-            derivative_2 = (((*func_ptr)(x + 2 * h) + 8 * (*func_ptr)(x + h) - 8 * (*func_ptr)(x - h) - (*func_ptr)(x - 2 * h)) / (12 * h));  //the derivative for i+1
-
-            if(i == 2)
-            {
-                e_1 = derivative_2 - derivative_1;                                 //initiate the absolute error of the derivative
-                eps_1 = e_1 / derivative_1;                                        //initiate the relative error of the derivative
-                fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative_2, e_1, eps_1);  //data are written in the form: loop i, step size h, derivative, estimated absolute error e, relative error \epsilon
-            }
-            else
-            {
-                e_2 = derivative_2 - derivative_1;
-                eps_2 = e_2 / derivative_1;
-                fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative_2, e_2, eps_2);
-                e_1 = e_2;                                                         //set e_i for the next i=i+1 as e_i+1 for this loop i
-                eps_1 = eps_2;                                                     //set eps_i for the next i=i+1 as eps_i+1 for this loop i
-                derivative_1 = derivative_2;
-            }
+            derivative[i - 1] = ((-(*func_ptr)(x + 2 * h) + 8 * (*func_ptr)(x + h) - 8 * (*func_ptr)(x - h) + (*func_ptr)(x - 2 * h)) / (12 * h));  //differentiate using central difference method
+            e[i - 2] = derivative[i - 1] - derivative[i - 2];                            //the absolute error of the derivative
+            eps[i - 2] = e[i - 2] / derivative[i - 2];                                   //the relative error of the derivative
+            fprintf(fp, "%2d  %7.6e  %7.6e  %7.6e  %7.6e\n", i, h, derivative[i - 1], e[i - 2], eps[i - 2]);  //data are written in the form: loop i, step size h, derivative, estimated absolute error e, relative error \epsilon
         }
 
-        //printf("%lf, %lf\n", log(fabs(eps_1)), log(fabs(eps_tol)));  //test
-        if (log(fabs(eps_1)) < log(fabs(eps_tol)))
+        //printf("%lf, %lf\n", log(fabs(eps_1)), log(fabs(eps_tol)));                    //test
+        if ((log(fabs(eps[i - 2])) < log(fabs(eps_tol))) && (i != 1))                    //break condition: when reaching the user defined convergence condition
+        {
+            i_max = i;
             break;
+        }
 
         h = h / 2;          //half the step size
     }
 
     fclose(fp);
+
+    i_temp = 0;
+    for (int l = 1; l <= i_max - 2; l++)                                                 //find index i when relative error is the smallest
+    {
+        if (fabs(eps[i_temp]) > fabs(eps[l]))
+            i_temp = l;
+    }
+    return derivative[i_temp + 1];                                                       //eps[i] is related to f_prime_i+2 i.e. derivative[i+1]
 }
 
-int choose_dif_method()     //choose to use which method above to calculate derivatives
+/*
+Choose to use which method above to calculate derivatives
+*/
+int choose_dif_method()
 {
-    int d_method;             //differentiate method index. 1: forward-difference; 2: central-difference; 3: extrapolated-difference
+    int d_method;           //differentiate method index. 1: forward-difference; 2: central-difference; 3: extrapolated-difference
 
     do
     {
@@ -219,7 +230,10 @@ int choose_dif_method()     //choose to use which method above to calculate deri
     } while (d_method == 0);
 }
 
-float input_position()      //input the position x where you want to calculate    /////// add identification of false input
+/*
+Input the position x where you want to calculate    /////// add identification of false input
+*/
+float input_position()
 {
     float x;                //position x
 
@@ -230,7 +244,10 @@ float input_position()      //input the position x where you want to calculate  
     return x;
 }
 
-float input_step_size()     //input the initial step size h_0
+/*
+Input the initial step size h_0
+*/
+float input_step_size()
 {
     float h;                //step size h
 
@@ -250,7 +267,10 @@ float input_step_size()     //input the initial step size h_0
     } while (h <= 0);
 }
 
-float input_epsilon_tolerance()  //input user defined relative error tolerance to determine convergence
+/*
+Input user defined relative error tolerance to determine convergence
+*/
+float input_epsilon_tolerance()
 {
     float eps_tol;
 
@@ -270,7 +290,10 @@ float input_epsilon_tolerance()  //input user defined relative error tolerance t
     } while (eps_tol == 0);
 }
 
-int input_max_of_loop()     //input a user defined maximum for the number of loops of calculation
+/*
+Input a user defined maximum for the number of loops of calculation
+*/
+int input_max_of_loop()
 {
     int max_loop;
     float max_loop_temp;
@@ -282,7 +305,7 @@ int input_max_of_loop()     //input a user defined maximum for the number of loo
         printf("\n");
         max_loop = (int) max_loop_temp;
 
-        switch (max_loop + 1 - max_loop_temp != 1 || max_loop_temp <= 0)
+        switch (max_loop + 1 - max_loop_temp != 1 || max_loop_temp <= 0)  //identify if have input a positive integer
         {
         case true:
             printf("Enter a positive integer!\n");
@@ -292,18 +315,28 @@ int input_max_of_loop()     //input a user defined maximum for the number of loo
     } while (max_loop + 1 - max_loop_temp != 1 || max_loop_temp <= 0);
 }
 
+/*
+Calculate derivative of f(x) using different methods at position x with initial step size h,
+until reaching a user defined relative error tolerance eps_tol or until finishing max_loop loops of calculation,
+give the best result and store all the results in files
+*/
 void calculate_derivative_1D(int dif_method, float x, float h, float (*func_ptr)(float), float eps_tol, int max_loop)  //calculate derivatives in the chosen method with parameters entered
 {
+    float f_prime;
+
     switch (dif_method)                   //use different methods to calculate derivatives
     {
     case 1:
-        forward_difference_1D(x, h, func_ptr, eps_tol, max_loop);
+        f_prime = forward_difference_1D(x, h, func_ptr, eps_tol, max_loop);
+        printf("f_prime = %7.6e\n", f_prime);
         break;
     case 2:
-        central_difference_1D(x, h, func_ptr, eps_tol, max_loop);
+        f_prime = central_difference_1D(x, h, func_ptr, eps_tol, max_loop);
+        printf("f_prime = %7.6e\n", f_prime);
         break;
     case 3:
-        extrapolated_difference_1D(x, h, func_ptr, eps_tol, max_loop);
+        f_prime = extrapolated_difference_1D(x, h, func_ptr, eps_tol, max_loop);
+        printf("f_prime = %7.6e\n", f_prime);
         break;
     default:
         break;

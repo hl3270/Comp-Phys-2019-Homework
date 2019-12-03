@@ -110,8 +110,8 @@ struct two_dim_grid_data cloud_in_cell_two_d()
         //yp = yp - (y_upper - y_lower) * j  / n_y;              //x position of the particle in the cell with origin (x_i, y)j)
         i = (int) (xp - x_lower) / delta_x;  //not use delta_x for higher accuracy
         j = (int) (yp - y_lower) / delta_y;  //not use delta_y for higher accuracy
-        xp = xp - delta_x * i;              //x position of the particle in the cell with origin (x_i, y)j)
-        yp = yp - delta_y * j;              //x position of the particle in the cell with origin (x_i, y)j)
+        xp = xp - delta_x * i;               //x position of the particle in the cell with origin (x_i, y)j)
+        yp = yp - delta_y * j;               //x position of the particle in the cell with origin (x_i, y)j)
 
         value[i][j] += (delta_x - xp) * (delta_y - yp) / (delta_x * delta_x * delta_y * delta_y);  //add weighted number to grid points
         value[i + 1][j] += xp * (delta_y - yp) / (delta_x * delta_x * delta_y * delta_y);

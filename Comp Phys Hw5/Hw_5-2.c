@@ -24,12 +24,12 @@ Just a reminder that the equation you are solving for is:
 \nabla ^ 2 (\phi) = - \rho / \epsilon_0
 */
 
-#include <stdlib.h>  //standard library
-#include <stdio.h>   //standard input/output library
-#include <stdbool.h> //standard boolean library
-#include <string.h>  //string routines
-#include <math.h>    //math routines
-#include <malloc.h>  //memory allocation routines
+#include <stdlib.h>     //standard library
+#include <stdio.h>      //standard input/output library
+#include <stdbool.h>    //standard boolean library
+#include <string.h>     //string routines
+#include <math.h>       //math routines
+#include <malloc.h>     //memory allocation routines
 
 #include "iteration.h"  //iteration methods header file
 
@@ -42,37 +42,37 @@ void main()
     struct two_dim_grid_data relaxation_2D(float coef_plus_x, float coef_minus_x, float coef_plus_y, float coef_minus_y, float (*func_ptr)(int x_i, int y_j, float hx, float hy));
     float func_x_y_hx_hy(int x_i, int y_j, float hx, float hy);
 
-    float (*func_ptr)(int x_i, int y_j, float hx, float hy);
-    float hx;
-    float hy;
-    float coef_minus_x;
-    float coef_plus_x;
-    float coef_minus_y;
-    float coef_plus_y;
-    struct two_dim_grid_data potential;     //iteration result
+    float (*func_ptr)(int x_i, int y_j, float hx, float hy);  //constant terms in the (over)relaxation equation
+    float hx;                                                 //size x of 2D grid cells
+    float hy;                                                 //size y of 2D grid cells
+    float coef_minus_x;                                       //coefficients of f(x - h_x, y) in the (over)relaxation equation
+    float coef_plus_x;                                        //coefficients of f(x + h_x, y) in the (over)relaxation equation
+    float coef_minus_y;                                       //coefficients of f(x, y - h_y) in the (over)relaxation equation
+    float coef_plus_y;                                        //coefficients of f(x, y + h_y) in the (over)relaxation equation
+    struct two_dim_grid_data potential;                       //iteration result
 
     beginning:
         strcpy(result_name, RESULT_NAME);
         printf("Calculate two dimensional electric potential\n\n");
         n_xy = cloud_in_cell_two_d();
 
-        hx = (n_xy.x[n_xy.n_x] - n_xy.x[0]) / n_xy.n_x;  //grid cell width
+        hx = (n_xy.x[n_xy.n_x] - n_xy.x[0]) / n_xy.n_x;       //grid cell width
         hy = (n_xy.y[n_xy.n_y] - n_xy.y[0]) / n_xy.n_y;
         coef_minus_x = hy * hy / (2 *(hx * hx + hy * hy));
         coef_plus_x = hy * hy / (2 *(hx * hx + hy * hy));
         coef_minus_y = hx * hx / (2 *(hx * hx + hy * hy));
         coef_plus_y = hx * hx / (2 *(hx * hx + hy * hy));
         func_ptr = func_x_y_hx_hy;
-        //potential = relaxation_2D(coef_plus_x, coef_minus_x, coef_plus_y, coef_minus_y, func_ptr);  //input conditions, parameters, and calculate the relaxation result
-        //printf("\n\n");
+        potential = relaxation_2D(coef_plus_x, coef_minus_x, coef_plus_y, coef_minus_y, func_ptr);  //input conditions, parameters, and calculate the relaxation result
+        printf("\n\n");
 
-        //for(int i = 0; i <= potential.n_x; i++)
-        //{
-            //for(int j = 0; j <= potential.n_y; j++)
-            //{
-                //printf("%9.8e %9.8e %9.8e\n", potential.x[i], potential.y[j], potential.z[i][j]);  //save the final results in data file
-            //}
-        //}
+        for(int i = 0; i <= potential.n_x; i++)
+        {
+            for(int j = 0; j <= potential.n_y; j++)
+            {
+                printf("%9.8e %9.8e %9.8e\n", potential.x[i], potential.y[j], potential.z[i][j]);   //save the final results in data file
+            }
+        }
 
         potential = GS_overrelaxation_2D(coef_plus_x, coef_minus_x, coef_plus_y, coef_minus_y, func_ptr);  //input conditions, parameters, and calculate the relaxation result
         printf("\n\n");
@@ -81,7 +81,7 @@ void main()
         {
             for(int j = 0; j <= potential.n_y; j++)
             {
-                //printf("%9.8e %9.8e %9.8e\n", potential.x[i], potential.y[j], potential.z[i][j]);  //save the final results in data file
+                printf("%9.8e %9.8e %9.8e\n", potential.x[i], potential.y[j], potential.z[i][j]);   //save the final results in data file
             }
         }
 
@@ -89,7 +89,7 @@ void main()
         free(potential.y);
         free(potential.z);
 
-        printf("\nTo continue, type 1; \nTo exit, press any other key.\n");  //choose to continue or exit
+        printf("\nTo continue, type 1; \nTo exit, press any other key.\n");                         //choose to continue or exit
         scanf("%d", &exit);
         if (exit == 1)
         {
@@ -100,6 +100,9 @@ void main()
 
 }
 
+/*
+Constant terms in the (over)relaxation equation
+*/
 float func_x_y_hx_hy(int x_i, int y_j, float hx, float hy)
 {
     return (E * n_xy.z[x_i][y_j] / (2 * EPS_0 * (1 / pow(hx, 2) + 1 / pow(hy, 2))));

@@ -86,7 +86,7 @@ void main()
     func_ptr = f;
     strcpy(equation_name, "x=1-exp(-2x)");
     printf("Solution to %s using relaxation method\n\n", equation_name);
-    //printf("Enter the starting point x_0 = ");                         //enter manually the starting point and the target accuracy
+    //printf("Enter the starting point x_0 = ");              //enter manually the starting point and the target accuracy
     //scanf("%f", &x_0);
     //printf("\nEnter the target solution accuracy \\epsilon = ");
     //scanf("%f", &accuracy);

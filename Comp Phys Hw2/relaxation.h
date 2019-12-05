@@ -40,7 +40,7 @@ float relaxation(float x_0, float (*func_ptr)(float x), float accuracy)
     fprintf(fp, "%3d %7.6e\n", iter, x);
     iter++;
 
-    for(; fabs(epsilon) >= accuracy; iter++)
+    for(; fabs(epsilon) >= fabs(accuracy); iter++)
     {
         x_prime = (*func_ptr)(x);
         epsilon = (x_prime - x) / (1 - (x_prime - x) / ((*func_ptr)(x_prime) - x_prime));  //x' = f(x)
@@ -90,7 +90,7 @@ float overrelaxation(float x_0, float (*func_ptr)(float x), float accuracy)
         epsilon = (x - x_0) / (1 - 1 / ((1 + omega) * ((*func_ptr)(x) - x) / (x - x_0) - omega));  //x = f(x_0)
         iter++;
 
-        for(; fabs(epsilon) >= accuracy; iter++)
+        for(; fabs(epsilon) >= fabs(accuracy); iter++)
         {
             x_prime = (*func_ptr)(x) * (1 + omega) - omega * x;
             epsilon = (x_prime - x) / (1 - 1 / ((1 + omega) * ((*func_ptr)(x_prime) - x_prime) / (x_prime - x) - omega));  //x' = f(x)
